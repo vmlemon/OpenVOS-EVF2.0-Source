@@ -1,0 +1,78 @@
+&brief:
+build_evf.cm
+
+This macro builds encode_vos_file.pm and decode_vos_file.pm from the
+program sources.  The sources and include files must be in the current
+dir, and the .pm's are also placed there.  Cross compilation is not
+supported by this macro.
+
+Only one .pm file is actually created, encode_vos_file.pm.
+decode_vos_file.pm is created as a link to encode_file_file.pm
+
+&arg:compiler:
+compiler:
+
+Enter the compiler, c or cc to be used for this compilation.
+
+c  is the old VOS compiler.
+cc is the VOS ansi standard c compiler.
+
+&arg:-rename_for_cpu:
+-rename_for_cpu
+
+Give this argument if you want the program modules to be renamed for
+each VOS cpu type.  Do this if you are compiling on a multi-module
+system and want to put the all the pm's in one directory for later
+distribution.
+
+Note that bundle.cm and unbundle.cm expect these programs to have the
+standard names, without the cpu tag.  So if you use this option, you
+must rename the .pm's back before bundle.cm and unbundle.cm can use
+them.
+
+Note also that only encode_vos_file is created when this option is
+used.  decode_vos_file.pm is created from encode_vos_file.pm by use
+of !copy_file or !link.
+
+ mc680x0  (motorola)    encode_vos_file.68k.pm
+ i860     (intel risc)  encode_vos_file.860.pm
+ 7100     (pa_risc)     encode_vos_file.7100.pm
+
+&arg:-table:
+-table
+
+The -table argument passes -table or -no_table to both compile and bind.
+
+   -table      Compile and bind with -table.
+   -no_table   Compile and bind with -no_table.
+  (not given)  Use compiler's and binder's native defaults.
+               (compile without tables and bind with tables)
+
+&arg:-delete_object:
+-delete_object
+
+Give the -no_delete_object argument if you want the object modules created
+during the compiles to be left in the current directory after the build is
+complete.
+
+Once you have compiled using -no_delete_object and the .obj files are
+present in the directory, -no_delete_object becomes the default.
+
+You must then give the -delete_object argument to delete the object files
+later.
+
+&arg:options:
+options:
+
+Enter any compile or bind options you want to use.
+Bind options must follow the keyword -bind.
+
+To compile with production_tables:    build_evf -production_table
+To obtain a bind map:                 build_evf -bind -map
+To do both:                           build_evf -production_table -bind -map
+
+&arg:-echo:
+-echo
+
+   -echo     Give this argument to echo each command as it is done.
+   -no_echo  Give this argument not to echo the commands.

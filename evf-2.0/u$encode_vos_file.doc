@@ -1,0 +1,182 @@
+     u$encode_vos_file and u$decode_vos_file
+
+
+     u$encode_vos_file() and u$decode_vos_file() are routines used to
+     encapsulate/decapsulate and optionally encode/decode VOS files for
+     transport to non-VOS systems possibly over a non 8-bit transport
+     medium (i.e. SMTP).
+
+     Calling sequence:
+
+     void u$encode_vos_file(char *Source, char *Destination, short *Options,
+                            char *ErrorText, short *Code)
+     void u$decode_vos_file(char *Source, char *Destination, short *Options,
+                            char *ErrorText, short *Code)
+
+     Note: These routines are meant to be called only from a "C" program.  The
+           Source, Destination, and ErrorText arguments are "C" type strings.
+
+     Arguments:
+
+          Source (input)
+               The full pathname of the source file.
+
+               For u$encode_vos_file, it is the name of the file to encode.
+
+               For u$decode_vos_file, it is the name of the encoded file
+               to decode.
+
+          Destination (input)
+               The full pathname of the destination.
+
+               For u$encode_vos_file, the full pathname of the destination
+               file.  A suffix of .evf is added to the pathname if it does
+               not exist.
+
+               For u$decode_vos_file, the full pathname of the destination
+               directory.  If Destination is empty (strlen() is 0), then
+|              the current directory is used.  If Destination is #null,
+|              then no decoding is done, but all the header-interpretation
+|              logic, including -tell, is still done.  This allows a macro
+|              which has successfully decoded a file to get the name and
+|              type of the extracted file by running this program again with
+|              -tell and attach_default_output.
+
+          Options (input)
+               A bitmap of options.  See the description for details.
+
+          ErrorText (output)
+               A description of any error that occurs during the encoding or
+               decoding.  This is not valid if the Code argument is non-zero.
+
+          Code (output)
+               A returned error code.
+
+     Description
+
+          u$encode_vos_file will encapsulate (if necessary) and optionally
+          encode a VOS file (sequential, relative, or fixed) so that it can
+          be transported though non-VOS systems without loss of the VOS file
+          type information.
+          
+          The Options argument has the following uses.  It is defined in the
+          u$encode_vos_file.h header file.
+
+               Name                          Value
+               EVF_OPTION_ENCODE             0x0001
+               EVF_OPTION_DONT_OVERWRITE     0x0002
+               EVF_OPTION_FILE_IS_TEXT       0x0004
+               EVF_OPTION_NO_HEADER          0x0008
+|              EVF_OPTION_OUTPUT_SEQUENTIAL  0x0010
+|              EVF_OPTION_BASE64             0x0020
+|              EVF_OPTION_TELL               0x0020
+
+               EVF_OPTION_ENCODE, if set, the file is written in uuencode
+               format.  It is ignored for u$decode_vos_file.
+
+|              EVF_OPTION_BASE64, if set, u$encode_vos_file writes the
+|              file in MIME base64 encoded format.  EVF_OPTION_ENCODE is
+|              ignored when EVF_OPTION_BASE64 is set.  This bit has the
+|              same numeric value as EVF_OPTION_TELL, which is used for
+|              u$decode_vos_file.
+|
+|              EVF_OPTION_TELL, if set, u$decode_vos_file displays the
+|              name of the destination file which is being created in
+|              the destination dir.  This will be the name of the file
+|              that was originally encoded by encode_vos_file or by
+|              another system.  This name is extracted from headers in
+|              the source file and is not related to the name of the
+|              source file itself, since encoded files may be renamed.
+|
+|              The VOS header, uuencode header, or MIME header is also
+|              displayed on a separate line after the destination file
+|              name.  A VOS header will be present if the file being
+|              decoded was created by encode_vos_file.  Foreign files
+|              will not have a VOS header, but will have a uuencode
+|              header (begin...) or MIME header (Content-type...).
+
+               EVF_OPTION_DONT_OVERWRITE, if set, will not allow
+               u$encode_vos_file to overwrite an existing file.
+
+               EVF_OPTION_FILE_IS_TEXT, if set, will treat the input file
+               as if it were a stream file and tells u$encode_vos_file to
+               NOT write encapsulation information.  It is ignored for
+               u$decode_vos_file.
+
+               EVF_OPTION_NO_HEADER, if set along with
+               EVF_OPTION_FILE_IS_TEXT, will suppress the output of the
+               header line (see below).  This will, in effect, make
+               u$encode_vos_file convert a sequential, relative, or fixed
+               file to stream format.  It is ignored for u$decode_vos_file.
+
+|              EVF_OPTION_OUTPUT_SEQUENTIAL, if set will produce a an output
+|              file with sequential file organization.  The purpose of this
+|              is to make a file which can be transmitted with remote_request
+|              (put_file, get_file).  Two different sequential file formats
+|              are available:
+|
+|              When used along with EVF_OPTION_ENCODE, a sequential file
+|              is written in uuencode format.  The records are identical
+|              to those of the uuencode stream file, only the file's
+|              organization is sequential.
+|
+|              When used along with EVF_OPTION_BASE64, a sequential file
+|              is written in MIME base64 encoded format.  The records are
+|              identical to those of the base64 stream file, only the file's
+|              organization is sequential.
+|
+|              When used without EVF_OPTION_ENCODE and EVF_OPTION_BASE64,
+|              a sequential file is written which contains the binary
+|              contents of the output stream, layed out into 61-byte
+|              sequential file records.
+|              
+|              This format is called seq_encoded; it does not correspond
+|              to any format available in the UNIX world.  It is sendable
+|              via remote_request over the Stratus RSN, and is 38% smaller
+|              than a uuencoded file (33% smaller than base64 encoded file).
+|
+|              This option is ignored for u$decode_vos_file.
+
+          Encapsulation occurs only on VOS sequential and relative files.
+          VOS fixed and stream files are supported, but no encapsulation is
+          required.  A two byte length field is added before each record
+          to indicate the size of the record.  The bytes are in big endian
+          order (high byte, then low byte).  The end of the file is signaled
+          by a length field equal to -1 (0xffff).
+
+          Optional encoding/decoding is performed in the same manner as the
+          UNIX utilities uuencode and uudecode.  The file format is
+          compatible, but if a VOS sequential or relative file is uudecoded
+          on a non-VOS system, the resulting file will still have the
+          encapsulation information in it.
+
+|         Optional MIME base64 encoding/decoding is performed in the same
+|         manner as the MIME standard for internet mailers.  Standard MIME
+|         application/octet-stream file attachment headers are used, but a
+|         full email message (including subject lines, etc.) is not produced.
+|       
+|         The seq_encoded file which is produced by using OUTPUT_SEQUENTIAL
+|         without ENCODE can only be decoded using this utility on a VOS
+|         system.  No uuencode 'begin' line is written into a seq_encoded
+|         output file.
+
+          u$encode_vos_file writes a header line to the output file before
+          the optional uuencode 'begin' line to carry the encapsulation
+          information.  Since the UNIX uudecode ignores all lines until it sees
+          a line that starts with 'begin', the extra line won't hurt anything.
+
+          The extra line is formatted as follows:
+
+          VOS <file_name> <sequential|relative|fixed|stream> <record_size>
+|             [encapsulated|not_encapsulated]
+|             [encoded|not_encoded|seq_encoded|base64_encoded]
+
+          If other attributes are required to be preserved (queues, files
+          with indexes, sparsely populated files, etc), then use the VOS save
+          utility to write a save file to disk (it is a plain sequential
+          file) and then use u$encode_vos_files to prepare the save file for
+          transfer.
+
+          Refer to the source code for u$encode_vos_file for more details
+          regarding the format of the .evf file.
+

@@ -1,0 +1,149 @@
+&brief:
+     encode_vos_file
+
+     encode_vos_file is used to encapsulate and optionally encode VOS files
+     for transport to non-VOS systems possibly over a non 8-bit transport
+     medium (i.e. SMTP).
+
+     Usage:
+
+     encode_vos_file
+      -------------------------- encode_vos_file ------------------------
+      source_file:  
+      destination:  
+      -encode:            no
+      -base64:            no
+      -file_is_text:      no
+      -no_header:         no
+      -overwrite:         yes
+      -output_sequential: no
+
+&more:
+
+     Usage: encode_vos_file source_file [destination] [-encode] [-base64]
+              [-file_is_text] [-no_header] [-no_overwrite] [-output_sequential]
+                       
+
+     Description
+
+          encode_vos_file will encapsulate (if necessary) and optionally
+          encode a VOS file (sequential, relative, or fixed) so that it can
+          be transported though non-VOS systems without loss of the VOS file
+          type information.
+
+&arg:source_file:
+          source_file [required]
+
+               The pathname of the file to encapsulate/encode.  Only one file
+               may be specified at a time.
+
+&arg:destination:
+          destination
+
+               The pathname of the destination.  A suffix of .evf is added
+               to the file is none is supplied.  If this parameter is not
+               given, then the output file will be the same as the input
+               file name with a .evf suffix added.
+
+               If this parameter is the pathname of a directory, then the
+               output file will be a file in that directory with the same
+               name as the input file with a .evf suffix added.
+
+&arg:-encode:
+          -encode
+
+               If this switch is supplied, the output file will be encoded
+               in the UNIX uuencode format.  This is useful when a binary
+               file must be transferred using a method which does not allow
+               transmission of binary data.
+
+               The output format is a stream file composed of records,
+               each of which contains 61 printable characters.
+
+               uuencoded files may still be corrupted by some Internet mail
+               servers, because the character set, although printable,
+               includes punctuation characters which (rarely) are filtered
+               by mail servers.
+
+               Because of this, the -base64 encoding scheme is recommended
+               for use with Internet mail applications.
+
+               uuencoding increases the size of the output file by 38%.
+
+&arg:-base64:
+          -base64
+
+               If this switch is supplied, the output file will be
+               encoded in the MIME base64 format.  MIME is a standard
+               developed for Internet mail transmission (Multi-purpose
+               Internet Mail Extensions).  Base64 is the MIME standard
+               for transmission of binary data in mail messages.
+
+               The output format is a stream file composed of records,
+               each of which contains 72 alphanumeric characters (plus
+               the / + and = characters).
+
+               Base64 encoding increases the size of the output file by 33%.
+&more:
+
+               Standard MIME application/octet-stream file attachment headers
+               are used, but a full email message (including subject lines,
+               etc.) is not produced.
+               
+&arg:-file_is_text:
+          -file_is_text
+
+               If this switch is supplied, encode_vos_file will treat the
+               input file as if it were a stream file and NOT write
+               encapsulation information.  All VOS format information will
+               be lost, but the output file will retain the VOS header
+               information.
+
+&arg:-no_header:
+          -no_header
+
+               This switch is used in conjunction with the -file_is_text
+               switch to convert simple VOS sequential text files to stream
+               format for transfer to non-VOS systems.
+
+&arg:-overwrite:
+          -no_overwrite
+
+               If this switch is given, encode_vos_file will not overwrite
+               any existing file.
+
+&arg:-output_sequential:
+          -output_sequential
+               Remote_request (put_file, get_file) cannot transmit
+               stream files over the rsn when either side is earlier
+               than VOS revision 12.  To transmit a gzip-compressed file
+               using remote_request, use encode_vos_file (on the .gz
+               file) and give the -output_sequential switch.
+
+               If the -encode or -base64 switch is also given, encoding is
+               done, but the output file's organization is sequential
+               instead of stream.  The output format is the same as the
+               encoded stream file, a series of records, each of which
+               contains 61 (-encode) or 72 (-base64) printable characters.
+
+               The resultant file can be transmitted by remote_request,
+               rsn_transfer, email, or any method which can accept an
+               ascii sequential file.
+&more:
+
+               If -output_sequential is used without -encode or -base64,
+               the file is converted to sequential format without
+               encoding the data.  The input data stream is segmented
+               into records which are layed into a sequential file
+               without translation.  The output format is a sequential
+               file composed of 61-byte records containing binary data.
+
+               The resultant file can be transmitted by remote_request,
+               rsn_transfer (use -binary), or any method which can accept
+               a sequential file containing binary data.
+
+               This processing increases the file size about 8%.
+               Compare to -encode (stream)     which adds 38%
+                      and -encode (sequential) which adds 46%
+                      and -base64 (stream)     which adds 33%
+                      and -base64 (sequential) which adds 41%.

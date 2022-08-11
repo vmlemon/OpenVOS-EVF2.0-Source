@@ -1,0 +1,87 @@
+&brief:
+
+     decode_vos_file
+
+     decode_vos_file is used to reverse the effect of the encode_vos_file
+     command on an encapsulate and/or encoded file.
+
+     Usage:
+
+     decode_vos_file
+      ------------------------------- decode_vos_file ------------------------
+      source_file:    
+      destination_dir:
+      -overwrite:      yes
+      -tell:           no
+
+&more:
+
+     Usage: decode_vos_file source_file [destination_dir] [-no_overwrite]
+                                        [-tell]
+
+     Description
+
+          decode_vos_file will reverse the effects of the encode_vos_file
+          command.  It will decapsulate (if necessary) and optionally
+          decode a VOS file (back to sequential, relative, or fixed).
+
+
+&arg:source_file:
+          source_file [required]
+
+               The pathname of the file to decapsulate/decode.  Only one file
+               may be specified at a time. (starname not allowed).
+
+               Usually the file will be from encode_vos_file.  uuencoded
+               or MIME base64 encoded files produced on other systems
+               (i.e. received as email) may also be processed.
+&more:
+               The -encode (uuencode) and -base64 (MIME) options are
+               compatible with encoding done on UNIX systems, PCs or mail
+               reading programs.  Files from these systems can usually be
+               handled intact, without pre-editing, provided there is only
+               one encoded block included in the message.
+
+               Email messages usually contains a free text section
+               followed by one or more encoded sections.  This program
+               extracts the first uuencoded or MIME base64 encoded
+               section only.  To extract subsequent encoded sections,
+               or if errors are reported when processing an email file,
+               edit the encoded section into a separate file and
+               process that.
+
+&arg:destination_dir:
+          destination_dir
+
+               The directory to write the file to.  If this is not specified,
+               the file will be written to the current directory.
+&more:
+               If destination_dir is #null, then no decoding is done, but
+               the header-interpretation logic, including -tell, is still
+               done.  This allows a macro which has successfully decoded a
+               file to get the name and type of the extracted file by running
+               this program again with -tell and attach_default_output.
+
+&arg:-overwrite:
+          -no_overwrite
+
+               If this switch is given, decode_vos_file will not overwrite
+               any existing file.
+
+&arg:-tell:
+          -tell
+
+               If this switch is given, decode_vos_file will display the
+               name of the destination file which is being created in
+               the destination dir.  This will be the name of the file
+               that was originally encoded by encode_vos_file or by
+               another system.  This name is extracted from headers in
+               the source file and is not related to the name of the
+               source file itself, since encoded files may be renamed.
+&more:
+               The VOS header, uuencode header, or MIME header is also
+               displayed on a separate line after the destination file
+               name.  A VOS header will be present if the file being
+               decoded was created by encode_vos_file.  Foreign files
+               will not have a VOS header, but will have a uuencode
+               header (begin...) or MIME header (Content-type...).

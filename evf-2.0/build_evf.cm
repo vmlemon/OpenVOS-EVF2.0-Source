@@ -1,0 +1,75 @@
+&  build_evf.cm
+&
+&  This macro builds encode_vos_file.pm and decode_vos_file.pm from the
+&  program sources.  The sources and include files must be in the current
+&  dir, and the .pm's are also placed there.  Cross-compiling is not
+&  supported; if you are doing that, you don't need this macro.
+&
+&  Only encode_vos_file.pm is actually created as a file.
+&  decode_vos_file.pm is created as a link to encode_vos_file.pm
+&
+&  See build_evf.help for argument usage.
+&
+&begin_parameters
+  comp    compiler:name,allow(c,cc),=c
+  rencpu  switch(-rename_for_cpu),=0
+  table   switch(-table),=='use compiler and binder defaults'
+  delobj  switch(-delete_object),='(calc ^ (exists u$encode_vos_file.obj))'
+  options options:unclaimed
+  uonly   switch(-u_only),secret,=0
+  echo    switch(-echo),secret,=1
+  debug   switch(-debug),secret,=0
+&end_parameters
+&if &echo& &then &echo command_lines
+           &else &echo no_command_lines
+&if (process_type) = batch &then !set_ready -format off
+&if &debug& &then &mode no_execute
+&
+&set_string cpu 68k
+&if (module_info cpu_type) > G699 &then &set_string cpu 7100
+&if (module_info cpu_type) > G799 &then &set_string cpu 860
+&
+&  -table arg, if given, applies to both compile and bind
+&if 0&table& &then &set_string tabopt -table
+             &else &set_string tabopt -no_table
+&if ^ (given table) &then &set_string tabopt ''
+&
+&set_string comp_opt (string (before &$options& -bind) &tabopt&)
+&set_string bind_opt (string (after  &$options& -bind) &tabopt&)
+&
+!&comp& u$encode_vos_file &comp_opt&
+&set cs (command_status)
+&
+&if ^ &uonly& &then !&comp& encode_vos_file &comp_opt&
+&set cs (max &cs& (command_status))
+&
+&if ^ &uonly& &then !&comp& decode_vos_file &comp_opt&
+&set cs (max &cs& (command_status))
+&if &cs& ^= 0 &then &goto err_return_cs
+&
+!bind encode_vos_file &bind_opt&
+&if (command_status) ^= 0 &then &goto err_return
+&
+&if ^ &delobj& &then &goto delete_done
+!delete_file u$encode_vos_file.obj
+!delete_file encode_vos_file.obj
+!delete_file decode_vos_file.obj
+&if (exists u$decode_vos_file.obj -link) &then !unlink u$decode_vos_file.obj
+&label delete_done
+&
+&if &rencpu& &then &goto rename_for_cpu
+!link encode_vos_file.pm decode_vos_file.pm -delete
+&return
+&
+&label rename_for_cpu
+!rename encode_vos_file.pm encode_vos_file.&cpu&.pm -delete
+&if (exists decode_vos_file.&cpu&.pm)
+    &then !delete_file decode_vos_file.&cpu&.pm
+&return
+&
+&label err_return
+&set cs (command_status)
+&
+&label err_return_cs
+!display_line build_evf: Stopping due to error. (message &cs&)
+&return &cs&
